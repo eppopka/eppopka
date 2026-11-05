@@ -14,7 +14,10 @@ DATA_FILE = Path(__file__).with_name("data.json")
 def load_sessions() -> set[date]:
     if not DATA_FILE.exists():
         return set()
-    raw = json.loads(DATA_FILE.read_text(encoding="utf-8"))
+    try:
+        raw = json.loads(DATA_FILE.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise SystemExit(f"Invalid data file: {DATA_FILE}") from error
     return {date.fromisoformat(item) for item in raw}
 
 
@@ -39,6 +42,7 @@ def build_parser() -> argparse.ArgumentParser:
     actions = parser.add_mutually_exclusive_group()
     actions.add_argument("--mark", action="store_true", help="mark today as active")
     actions.add_argument("--stats", action="store_true", help="show activity statistics")
+    actions.add_argument("--export", action="store_true", help="print all active dates")
     return parser
 
 
@@ -53,6 +57,8 @@ def main() -> None:
     elif args.stats:
         print(f"Active days: {len(sessions)}")
         print(f"Current streak: {current_streak(sessions)} day(s).")
+    elif args.export:
+        print("\n".join(item.isoformat() for item in sorted(sessions)))
     else:
         build_parser().print_help()
 
